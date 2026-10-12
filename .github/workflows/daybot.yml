@@ -1,0 +1,62 @@
+name: Day bot (SPY intraday)
+
+# Runs every weekday on its own schedule and its own concurrency group, so it
+# never waits on, cancels, or blocks any other bot's workflow.
+on:
+  schedule:
+    # 13:33 UTC = 9:33 am New York in summer, 8:33 am in winter.
+    # The bot waits for the 10:00 check on its own, so a late start is fine.
+    - cron: "33 13 * * 1-5"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run (log decisions, send no orders)"
+        type: boolean
+        default: false
+
+concurrency:
+  group: daybot-spy
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  DAYBOT_KEY: ${{ secrets.DAYBOT_KEY }}
+  DAYBOT_SECRET: ${{ secrets.DAYBOT_SECRET }}
+  DAYBOT_PAPER: ${{ vars.DAYBOT_PAPER || 'true' }}
+  DAYBOT_MAX_LEVERAGE: ${{ vars.DAYBOT_MAX_LEVERAGE || '4' }}
+  DAYBOT_DRY_RUN: ${{ inputs.dry_run && 'true' || 'false' }}
+  PYTHONUNBUFFERED: "1"
+
+jobs:
+  # A GitHub job can run at most 6 hours, so the trading day is split in two.
+  morning:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: daybot/requirements.txt
+      - run: pip install -r daybot/requirements.txt
+      - name: Checks 10:00 - 12:30
+        run: python daybot/bot.py --until 12:45
+
+  afternoon:
+    needs: morning
+    if: always()   # still runs (and closes any position) even if the morning job failed
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: daybot/requirements.txt
+      - run: pip install -r daybot/requirements.txt
+      - name: Checks 13:00 - 15:30, flat by 15:59
+        run: python daybot/bot.py --from 12:45 --until 16:05

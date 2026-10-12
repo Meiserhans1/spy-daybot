@@ -1,0 +1,41 @@
+name: Day bot backtest (recent data)
+
+# Manual only. Tests the exact bot rules on real SPY minute data from Alpaca.
+# Results appear on the run's summary page.
+on:
+  workflow_dispatch:
+    inputs:
+      start:
+        description: "Start date (Alpaca minute data begins in 2016)"
+        default: "2016-01-01"
+      cost_bps:
+        description: "Trading cost per side in basis points"
+        default: "0.2"
+      max_leverage:
+        description: "Max leverage"
+        default: "4"
+
+permissions:
+  contents: read
+
+jobs:
+  backtest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: daybot/requirements.txt
+      - run: pip install -r daybot/requirements.txt
+      - run: >
+          python daybot/backtest_recent.py
+          --start "${{ inputs.start }}"
+          --cost_bps "${{ inputs.cost_bps }}"
+          --max_leverage "${{ inputs.max_leverage }}"
+        env:
+          DAYBOT_KEY: ${{ secrets.DAYBOT_KEY }}
+          DAYBOT_SECRET: ${{ secrets.DAYBOT_SECRET }}
+          DAYBOT_PAPER: "true"
