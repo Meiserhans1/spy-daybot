@@ -422,8 +422,8 @@ def run(start_from, until):
             if "pattern day" in b.last_refusal.lower():
                 state["no_more_entries"] = "Alpaca refused an entry under the pattern day trader rule earlier today"
             else:
-                a = b.account()
-                smaller = min(math.floor(0.95 * float(a.regt_buying_power or 0) / px), shares // 2)
+                # most refusals at full size are buying power; try once at 75% size
+                smaller = math.floor(shares * 0.75)
                 if smaller >= 1:
                     log(f"retrying with {smaller} shares")
                     b.market(side, smaller)
