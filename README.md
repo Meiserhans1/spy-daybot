@@ -91,6 +91,19 @@ After that, it runs by itself every weekday. It skips holidays and half days.
   position.
 - **To pause:** Actions → Day bot → **⋯ → Disable workflow**.
 
+## If something goes wrong
+
+- A refused order or a failed API call never stops the bot. It logs what
+  Alpaca said, keeps checking, and still closes everything at 15:59.
+- Problems show up as annotations at the top of the run page, which you can
+  read without signing in. If anything went wrong that day, the run is marked
+  failed at the end so GitHub still emails you.
+- **The $25k rule.** Every trade this bot makes is a day trade. An account
+  under $25,000 only gets 3 day trades per 5 business days, and Alpaca refuses
+  the 4th. The bot tracks this and skips entries once the limit is used, so it
+  never opens a trade it can't close the same day. To trade every day, give
+  the bot's paper account $25,000 or more.
+
 ## Settings (repository variables, optional)
 
 | Variable | Default | Meaning |

@@ -4,9 +4,10 @@ name: Day bot (SPY intraday)
 # never waits on, cancels, or blocks any other bot's workflow.
 on:
   schedule:
-    # 13:33 UTC = 9:33 am New York in summer, 8:33 am in winter.
-    # The bot waits for the 10:00 check on its own, so a late start is fine.
-    - cron: "33 13 * * 1-5"
+    # 13:07 UTC = 9:07 am New York in summer, 8:07 am in winter.
+    # GitHub often starts scheduled runs 20-40+ minutes late, so this leaves a big
+    # cushion before the 10:00 check. The bot waits for each check on its own.
+    - cron: "7 13 * * 1-5"
   workflow_dispatch:
     inputs:
       dry_run:
@@ -33,7 +34,7 @@ jobs:
   # A GitHub job can run at most 6 hours, so the trading day is split in two.
   morning:
     runs-on: ubuntu-latest
-    timeout-minutes: 300
+    timeout-minutes: 340   # an on-time winter start (8:07) runs about 4h40m
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
